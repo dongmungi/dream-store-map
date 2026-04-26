@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="광주광역시 꿈드리미 카드를 사용할 수 있는 가맹점을 지도에서 찾아보세요">
+  <meta name="theme-color" content="#5b6cf8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="꿈드리미 매장찾기">
+  <link rel="manifest" href="./manifest.json">
+  <title>광주광역시 꿈드리미 카드 매장찾기</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=ad60a91356b39c81913945dae75a92a7&autoload=false&libraries=clusterer"></script>
+
+  <style>
+    :root {
+      --bg-0: #ffffff;
+      --bg-1: #f8f9fb;
+      --bg-2: #f0f2f7;
+      --bg-3: #e8ecf3;
+
+      --accent:      #5b6cf8;
+      --accent-hover:#4a58e0;
+      --accent-bg:   rgba(91,108,248,.08);
+      --accent-text: #4a58e0;
+
+      --border:    rgba(0,0,0,.06);
+      --border-md: rgba(0,0,0,.12);
+
+      --text-1: #1a1a2e;
+      --text-2: #5a5a7a;
+      --text-3: #8a8aaa;
+
+      --cat-a-bg: rgba(91,108,248,.1);   --cat-a-fg: #4a58e0;
+      --cat-b-bg: rgba(20,184,166,.1);   --cat-b-fg: #0d9488;
+      --cat-c-bg: rgba(245,158,11,.1);   --cat-c-fg: #d97706;
+      --cat-d-bg: rgba(52,211,153,.1);   --cat-d-fg: #059669;
+      --cat-e-bg: rgba(232,121,249,.1);  --cat-e-fg: #d946ef;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg-0);
+      color: var(--text-1);
+    }
+
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+
+    #topbar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: var(--bg-0);
+      border-bottom: 1px solid var(--border-md);
+      box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    }
+
+    .topbar-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 14px 24px 11px;
+    }
+
+    .topbar-header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 11px;
+    }
+
+    .logo-block { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--accent-bg);
+      color: var(--accent-text);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(91,108,248,.2);
+      width: fit-content;
+    }
+
+    .logo-badge svg { width: 10px; height: 10px; }
+
+    .logo-title {
+      color: var(--text-1);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1.3;
+      margin-top: 3px;
+    }
+
+    .logo-sub { color: var(--text-3); font-size: 10px; letter-spacing: .03em; }
+
+    .logo-divider {
+      width: 1px; height: 36px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .search-wrap { flex: 1; position: relative; max-width: 480px; }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      width: 15px; height: 15px;
+      stroke: var(--text-3); fill: none;
+      pointer-events: none;
+    }
+
+    #search {
+      width: 100%;
+      padding: 9px 14px 9px 36px;
+      border: 1px solid var(--border-md);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg-1);
+      color: var(--text-1);
+      transition: border-color .2s, background .2s;
+    }
+
+    #search::placeholder { color: var(--text-3); }
+
+    #search:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: var(--bg-0);
+    }
+
+    .store-count { margin-left: auto; text-align: right; flex-shrink: 0; }
+    .store-count-num  { font-size: 22px; font-weight: 700; color: var(--text-1); line-height: 1; }
+    .store-count-label { font-size: 10px; color: var(--text-3); letter-spacing: .04em; margin-top: 1px; }
+
+    .category-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .cat-label { font-size: 10px; color: var(--text-3); font-weight: 600; letter-spacing: .06em; flex-shrink: 0; }
+
+    .category-filters { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .category-btn {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      padding: 5px 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--text-2);
+      transition: all .15s;
+    }
+
+    .category-btn:hover { background: var(--bg-2); border-color: var(--border-md); color: var(--text-1); }
+
+    .category-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    #card {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-0);
+      border-top: 1px solid var(--border-md);
+      max-height: 55vh;
+      overflow-y: auto;
+      box-shadow: 0 -8px 40px rgba(0,0,0,.08);
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      z-index: 50;
+    }
+
+    #card.active { transform: translateY(0); }
+
+    .card-header {
+      position: sticky; top: 0;
+      background: var(--bg-1);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-header-left { display: flex; align-items: center; gap: 10px; }
+
+    .card-header-bar { width: 3px; height: 16px; background: var(--accent); border-radius: 99px; }
+
+    .card-title { font-size: 13px; font-weight: 700; color: var(--text-1); }
+
+    .card-count-badge {
+      font-size: 11px;
+      background: var(--accent-bg);
+      color: var(--accent-text);
+      padding: 2px 9px;
+      border-radius: 4px;
+      font-weight: 600;
+      border: 1px solid rgba(91,108,248,.2);
+    }
+
+    .card-close {
+      background: transparent;
+      border: 1px solid var(--border-md);
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-3);
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+
+    .card-close:hover { background: var(--bg-2); color: var(--text-1); }
+
+    .item {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .12s;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 12px;
+      align-items: center;
+    }
+
+    .item:hover { background: var(--bg-1); }
+    .item:last-child { border-bottom: none; }
+
+    .item-left { display: flex; flex-direction: column; gap: 5px; }
+
+    .item-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .item-name { font-size: 14px; font-weight: 700; color: var(--text-1); }
+
+    .item-category {
+      display: inline-flex;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .item-address { font-size: 12px; color: var(--text-2); }
+    .item-phone, .item-hours { font-size: 12px; color: var(--text-3); }
+    .item-arrow { color: var(--text-3); font-size: 18px; }
+
+    .cat-a { background: var(--cat-a-bg); color: var(--cat-a-fg); }
+    .cat-b { background: var(--cat-b-bg); color: var(--cat-b-fg); }
+    .cat-c { background: var(--cat-c-bg); color: var(--cat-c-fg); }
+    .cat-d { background: var(--cat-d-bg); color: var(--cat-d-fg); }
+    .cat-e { background: var(--cat-e-bg); color: var(--cat-e-fg); }
+
+    .detail-card { padding: 20px; }
+
+    .detail-name {
+      font-size: 18px; font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 8px;
+      letter-spacing: -.02em;
+    }
+
+    .detail-category {
+      display: inline-flex;
+      font-size: 12px; font-weight: 600;
+      padding: 4px 11px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .detail-divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    .detail-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+    .detail-row:last-child { margin-bottom: 0; }
+
+    .detail-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+
+    .detail-row-content { flex: 1; padding-top: 3px; }
+
+    .detail-row-label {
+      font-size: 10px; color: var(--text-3); font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase; margin-bottom: 3px;
+    }
+
+    .detail-row-value { font-size: 13px; color: var(--text-1); font-weight: 500; line-height: 1.5; }
+
+    .label {
+      background: var(--bg-0);
+      border: 1px solid var(--border-md);
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 13px; font-weight: 700;
+      display: flex; gap: 8px; align-items: center;
+      cursor: pointer;
+      transition: all .18s;
+      font-family: 'Noto Sans KR', sans-serif;
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    }
+
+    .label:hover {
+      background: var(--bg-1);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+
+    .label-text { color: var(--text-1); font-weight: 700; }
+
+    .count {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 11px; font-weight: 700;
+      min-width: 28px; text-align: center;
+    }
+
+    .location-btn {
+      position: fixed;
+      bottom: 100px; right: 20px;
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      background: var(--bg-0);
+      border: 1px solid var(--border-md);
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+      cursor: pointer;
+      transition: all .18s;
+      z-index: 40;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .location-btn svg { width: 18px; height: 18px; stroke: var(--text-1); fill: none; }
+
+    .location-btn:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+
+    #card::-webkit-scrollbar { width: 4px; }
+    #card::-webkit-scrollbar-track { background: var(--bg-1); }
+    #card::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 4px; }
+    #card::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+    .empty-state { padding: 52px 20px; text-align: center; }
+
+    .empty-state-icon {
+      width: 52px; height: 52px;
+      background: var(--bg-2);
+      border: 1px solid var(--border-md);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+      font-size: 22px;
+    }
+
+    .empty-state-text { font-size: 13px; color: var(--text-3); line-height: 1.7; }
+
+    #footer {
+      position: fixed;
+      bottom: 0; right: 0;
+      padding: 12px 16px;
+      font-size: 11px;
+      color: var(--text-3);
+      background: rgba(255,255,255,.95);
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      border-radius: 8px 0 0 0;
+      z-index: 30;
+      backdrop-filter: blur(8px);
+    }
+
+    #footer a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color .2s;
+    }
+
+    #footer a:hover { color: var(--accent-hover); }
+
+    @media (max-width: 768px) {
+      .topbar-inner { padding: 12px 16px 9px; }
+      .topbar-header { gap: 10px; margin-bottom: 9px; }
+      .logo-title { font-size: 15px; }
+      .logo-divider { display: none; }
+      .search-wrap { max-width: 100%; }
+      .store-count { display: none; }
+      #card { max-height: 62vh; }
+      .item { padding: 12px 16px; }
+      .category-btn { font-size: 11px; padding: 4px 10px; }
+      #footer { font-size: 10px; padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-header">
+        <div class="logo-block">
+          <div class="logo-badge">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0L9.8 5.5H16L11 9L13 14.5L8 11L3 14.5L5 9L0 5.5H6.2L8 0Z"/></svg>
+            광주광역시
+          </div>
+          <div class="logo-title">꿈드리미 매장찾기</div>
+          <div class="logo-sub">Gwangju Dream Card Partner Map</div>
+        </div>
+
+        <div class="logo-divider"></div>
+
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input id="search" type="text" placeholder="구 / 동 / 가게명 검색">
+        </div>
+
+        <div class="store-count">
+          <div class="store-count-num" id="storeCountNum">—</div>
+          <div class="store-count-label">가맹점</div>
+        </div>
+      </div>
+
+      <div class="category-row">
+        <span class="cat-label">분류</span>
+        <div class="category-filters" id="categoryFilters"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <button class="location-btn" id="locationBtn" title="현재 위치">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+    </svg>
+  </button>
+
+  <div id="card">
+    <div class="card-header">
+      <div class="card-header-left">
+        <div class="card-header-bar"></div>
+        <div class="card-title" id="cardTitle">가맹점 목록</div>
+        <div class="card-count-badge" id="cardCountBadge" style="display:none"></div>
+      </div>
+      <button class="card-close" onclick="closeCard()">✕</button>
+    </div>
+    <div class="card-content" id="cardContent"></div>
+  </div>
+
+  <script>
+    let map, data = [], overlays = [], clusterer;
+    let currentFilter = null, selectedMarker = null, selectedItem = null;
+    let allCategories = new Set(), markerMap = {};
+
+    const CAT_CLASSES = ['cat-a','cat-b','cat-c','cat-d','cat-e'];
+    const catClassMap = {};
+
+    function getCatClass(cat) {
+      if (!cat) return CAT_CLASSES[0];
+      if (catClassMap[cat] === undefined) {
+        catClassMap[cat] = CAT_CLASSES[Object.keys(catClassMap).length % CAT_CLASSES.length];
+      }
+      return catClassMap[cat];
+    }
+
+    const GU_CENTER = {
+      "서구":   { lat: 35.1527, lng: 126.8902 },
+      "남구":   { lat: 35.1324, lng: 126.9026 },
+      "북구":   { lat: 35.1743, lng: 126.9111 },
+      "광산구": { lat: 35.1396, lng: 126.7936 },
+      "동구":   { lat: 35.1461, lng: 126.9233 }
+    };
+
+    kakao.maps.load(init);
+
+    function init() {
+      map = new kakao.maps.Map(document.getElementById('map'), {
+        center: new kakao.maps.LatLng(35.1595, 126.8526),
+        level: 7
+      });
+
+      clusterer = new kakao.maps.MarkerClusterer({ map, averageCenter: true, minLevel: 5 });
+
+      fetch("./stores.json")
+        .then(r => {
+          if (!r.ok) throw new Error('Network response was not ok');
+          return r.json();
+        })
+        .then(d => {
+          console.log('Data loaded:', d.length, 'items');
+          data = d.map(i => ({ ...i, lat: Number(i.lat), lng: Number(i.lng) }));
+          
+          const categories = Array.from(new Set(data.map(i => i.category)));
+          console.log('Categories found:', categories);
+          
+          categories.forEach(c => {
+            allCategories.add(c);
+            getCatClass(c);
+          });
+          
+          initCategoryFilters();
+          document.getElementById('storeCountNum').textContent = data.length.toLocaleString();
+          render();
+        })
+        .catch(err => {
+          console.error('Error loading data:', err);
+          showEmptyState("데이터를 불러올 수 없습니다.");
+        });
+
+      kakao.maps.event.addListener(map, 'zoom_changed', render);
+      document.getElementById('locationBtn').addEventListener('click', getCurrentLocation);
+      document.getElementById('search').addEventListener('input', handleSearch);
+    }
+
+    function initCategoryFilters() {
+      const container = document.getElementById('categoryFilters');
+      container.innerHTML = '';
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'category-btn active';
+      resetBtn.textContent = '전체';
+      resetBtn.onclick = () => {
+        currentFilter = null;
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        resetBtn.classList.add('active');
+        render();
+      };
+      container.appendChild(resetBtn);
+
+      // 카테고리 정규화: 독서실/스터디카페 → 독서/스터디, 문방구점 → 문방구
+      const uniqueCategories = Array.from(allCategories).filter(cat => cat !== undefined && cat !== null).map(cat => {
+        if (cat.includes('독서') || cat.includes('스터디')) {
+          return '독서/스터디';
+        } else if (cat.includes('문방구')) {
+          return '문방구';
+        }
+        return cat;
+      });
+      
+      const uniqueSet = new Set(uniqueCategories);
+      
+      Array.from(uniqueSet).sort().forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'category-btn';
+        btn.textContent = cat;
+        btn.onclick = () => {
+          currentFilter = cat;
+          document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          render();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function render() {
+      clusterer.clear();
+      overlays.forEach(o => o.setMap(null));
+      overlays = []; markerMap = {};
+      if (map.getLevel() >= 6) drawGu();
+      else drawMarkers();
+    }
+
+    function getFilteredData() {
+      if (!currentFilter) return data;
+      
+      if (currentFilter === '독서/스터디') {
+        return data.filter(i => i.category && (i.category.includes('독서') || i.category.includes('스터디')));
+      } else if (currentFilter === '문방구') {
+        return data.filter(i => i.category && i.category.includes('문방구'));
+      }
+      
+      return data.filter(i => i.category === currentFilter);
+    }
+
+    function drawGu() {
+      const grouped = {};
+      getFilteredData().forEach(i => {
+        const gu = getGu(i.address);
+        if (!grouped[gu]) grouped[gu] = [];
+        grouped[gu].push(i);
+      });
+
+      Object.keys(grouped).forEach(gu => {
+        const list = grouped[gu];
+        const pos = GU_CENTER[gu] || { lat: 35.1595, lng: 126.8526 };
+        const center = new kakao.maps.LatLng(pos.lat, pos.lng);
+
+        const el = document.createElement('div');
+        el.className = 'label';
+        el.innerHTML = `<span class="label-text">${gu}</span><span class="count">${list.length}</span>`;
+        el.onclick = () => { map.panTo(center); map.setLevel(5); showCardList(list, gu); };
+
+        const overlay = new kakao.maps.CustomOverlay({ position: center, content: el });
+        overlay.setMap(map);
+        overlays.push(overlay);
+      });
+    }
+
+    function drawMarkers() {
+      const markers = [];
+      const markersByAddress = {};
+      getFilteredData().forEach(i => {
+        if (!markersByAddress[i.address]) markersByAddress[i.address] = [];
+        markersByAddress[i.address].push(i);
+      });
+
+      Object.keys(markersByAddress).forEach(address => {
+        const items = markersByAddress[address];
+        const first = items[0];
+        const isMultiple = items.length > 1;
+        const isSelected = selectedMarker && selectedMarker.address === address;
+
+        const marker = new kakao.maps.Marker({
+          position: new kakao.maps.LatLng(first.lat, first.lng),
+          image: getMarkerImage(first.category, isMultiple, isSelected)
+        });
+
+        marker.itemData = items;
+        marker.isMultiple = isMultiple;
+        marker.address = address;
+
+        kakao.maps.event.addListener(marker, 'click', () => {
+          if (isMultiple) { showCardList(items, address); updateMarkerSelection(marker, true); }
+          else openCard(first, marker);
+        });
+
+        markers.push(marker);
+        markerMap[address] = marker;
+      });
+
+      clusterer.addMarkers(markers);
+      if (selectedMarker && selectedMarker.address) selectedMarker = markerMap[selectedMarker.address];
+    }
+
+    function getMarkerImage(category, isMultiple, isSelected) {
+      if (isSelected) return new kakao.maps.MarkerImage("https://i.ibb.co/KpZ4mz4M/image.png", new kakao.maps.Size(40,40));
+      if (isMultiple) return new kakao.maps.MarkerImage("https://i.ibb.co/xwGhThK/image.png", new kakao.maps.Size(40,40));
+      let src = "https://i.ibb.co/xwGhThK/image.png";
+      if (category && typeof category === 'string') {
+        if (category.includes('독서') || category.includes('스터디')) src = "https://i.ibb.co/wZP78p2z/image.png";
+        else if (category.includes('문방구')) src = "https://i.ibb.co/SXwBJVmj/image.png";
+        else if (category.includes('서점'))  src = "https://i.ibb.co/RpmKddHL/image.png";
+        else if (category.includes('안경'))  src = "https://i.ibb.co/N6Y4LR9K/image.png";
+      }
+      return new kakao.maps.MarkerImage(src, new kakao.maps.Size(40,40));
+    }
+
+    function showCardList(list, title = '가맹점 목록') {
+      document.getElementById('cardTitle').textContent = title;
+      const badge = document.getElementById('cardCountBadge');
+      badge.textContent = `${list.length}개`;
+      badge.style.display = list.length > 0 ? 'block' : 'none';
+
+      document.getElementById('cardContent').innerHTML = list.length === 0
+        ? `<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">검색 결과가 없습니다.</div></div>`
+        : list.map(i => `
+          <div class="item" onclick="handleItemClick(event, ${JSON.stringify(i).replace(/"/g,'&quot;')})">
+            <div class="item-left">
+              <div class="item-name-row">
+                <span class="item-name">${i.name}</span>
+                <span class="item-category ${getCatClass(i.category)}">${i.category}</span>
+              </div>
+              <div class="item-address">📍 ${i.address}</div>
+              ${i.phone ? `<div class="item-phone">📞 ${i.phone}</div>` : ''}
+              ${i.hours ? `<div class="item-hours">🕐 ${i.hours}</div>` : ''}
+            </div>
+            <div class="item-arrow">›</div>
+          </div>`).join('');
+
+      document.getElementById('card').classList.add('active');
+    }
+
+    function handleItemClick(event, item) {
+      event.stopPropagation();
+      openCard(item);
+    }
+
+    function openCard(item) {
+      document.getElementById('cardTitle').textContent = '가맹점 상세정보';
+      document.getElementById('cardCountBadge').style.display = 'none';
+
+      const cc = getCatClass(item.category);
+      document.getElementById('cardContent').innerHTML = `
+        <div class="detail-card">
+          <div class="detail-name">${item.name}</div>
+          <div class="detail-category ${cc}">${item.category}</div>
+          <div class="detail-divider"></div>
+          <div class="detail-row">
+            <div class="detail-icon">📍</div>
+            <div class="detail-row-content">
+              <div class="detail-row-label">주소</div>
+              <div class="detail-row-value">${item.address}</div>
+            </div>
+          </div>
+          ${item.phone ? `<div class="detail-row">
+            <div class="detail-icon">📞</div>
+            <div class="detail-row-content">
+              <div class="detail-row-label">전화번호</div>
+              <div class="detail-row-value">${item.phone}</div>
+            </div>
+          </div>` : ''}
+          ${item.hours ? `<div class="detail-row">
+            <div class="detail-icon">🕐</div>
+            <div class="detail-row-content">
+              <div class="detail-row-label">운영시간</div>
+              <div class="detail-row-value">${item.hours}</div>
+            </div>
+          </div>` : ''}
+        </div>`;
+
+      document.getElementById('card').classList.add('active');
+      const pos = new kakao.maps.LatLng(item.lat, item.lng);
+      map.setLevel(3);
+      setTimeout(() => map.panTo(pos), 50);
+
+      if (selectedMarker && selectedItem)
+        selectedMarker.setImage(getMarkerImage(selectedItem.category, selectedMarker.isMultiple, false));
+
+      selectedItem = item;
+      const tm = markerMap[item.address];
+      if (tm) { selectedMarker = tm; tm.setImage(getMarkerImage(item.category, false, true)); }
+    }
+
+    function updateMarkerSelection(marker, isMultiple) {
+      if (selectedMarker) selectedMarker.setImage(getMarkerImage(null, selectedMarker.isMultiple, false));
+      selectedMarker = marker; selectedItem = null;
+      marker.setImage(getMarkerImage(null, isMultiple, true));
+    }
+
+    function closeCard() {
+      document.getElementById('card').classList.remove('active');
+      if (selectedMarker && selectedItem)
+        selectedMarker.setImage(getMarkerImage(selectedItem.category, selectedMarker.isMultiple, false));
+      selectedMarker = null; selectedItem = null;
+    }
+
+    function getGu(addr) {
+      if (addr.includes('서구'))   return '서구';
+      if (addr.includes('남구'))   return '남구';
+      if (addr.includes('북구'))   return '북구';
+      if (addr.includes('광산구')) return '광산구';
+      if (addr.includes('동구'))   return '동구';
+      return '기타';
+    }
+
+    function handleSearch(e) {
+      const q = e.target.value.toLowerCase().trim();
+      
+      if (!q) { 
+        render(); 
+        closeCard(); 
+        return; 
+      }
+      
+      const filtered = data.filter(i => {
+        try {
+          const nameMatch = (i.name || '').toLowerCase().includes(q);
+          const addressMatch = (i.address || '').toLowerCase().includes(q);
+          const categoryMatch = (i.category || '').toLowerCase().includes(q);
+          return nameMatch || addressMatch || categoryMatch;
+        } catch (err) {
+          console.error('Filter error:', err, i);
+          return false;
+        }
+      });
+      
+      showCardList(filtered, '검색 결과');
+      
+      if (filtered.length > 0) {
+        const first = filtered[0];
+        const lat = Number(first.lat);
+        const lng = Number(first.lng);
+        map.panTo(new kakao.maps.LatLng(lat, lng));
+        map.setLevel(5);
+      }
+    }
+
+    function getCurrentLocation() {
+      if (!navigator.geolocation) { alert('위치 정보를 지원하지 않는 브라우저입니다.'); return; }
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const pos = new kakao.maps.LatLng(coords.latitude, coords.longitude);
+          map.panTo(pos); map.setLevel(5);
+          new kakao.maps.Marker({ position: pos, title: '현재 위치' }).setMap(map);
+        },
+        () => alert('위치 정보를 가져올 수 없습니다.')
+      );
+    }
+
+    function showEmptyState(msg) {
+      document.getElementById('cardContent').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⚠️</div>
+          <div class="empty-state-text">${msg}</div>
+        </div>`;
+      document.getElementById('card').classList.add('active');
+    }
+
+    // PWA Service Worker 등록
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('Service Worker 등록 성공:', registration);
+          })
+          .catch(error => {
+            console.log('Service Worker 등록 실패:', error);
+          });
+      });
+    }
+  </script>
+
+  <div id="footer">
+    Made with ❤️ by <a href="https://instagram.com/dongmungi" target="_blank" rel="noopener noreferrer">@dongmungi</a>
+  </div>
+</body>
+</html>
