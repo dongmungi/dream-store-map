@@ -8,6 +8,7 @@
   "orientation": "portrait-primary",
   "theme_color": "#5b6cf8",
   "background_color": "#ffffff",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./icon-192.png",
@@ -22,5 +23,19 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["shopping", "lifestyle"]
+  "categories": ["shopping", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
 }
